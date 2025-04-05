@@ -1,0 +1,326 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Trading Automation Workflow</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "d3": "https://cdn.jsdelivr.net/npm/d3@7/+esm",
+            "monaco-editor": "https://cdn.jsdelivr.net/npm/monaco-editor@0.33.0/+esm"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Crypto Trading Automation</h1>
+            <div class="connection-status">
+                <span id="status-indicator"></span>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </header>
+        
+        <main>
+            <section class="dashboard">
+                <div class="market-overview">
+                    <h2>Market Overview</h2>
+                    <div class="market-stats">
+                        <div class="stat-card">
+                            <h3>Total Balance</h3>
+                            <p id="total-balance">$0.00</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Profit/Loss</h3>
+                            <p id="profit-loss">$0.00</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Active Bots</h3>
+                            <p id="active-bots">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Last Analysis</h3>
+                            <p id="last-analysis">--:--:--</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="controls-section">
+                    <h2>Workflow Controls</h2>
+                    <div class="control-buttons">
+                        <button id="start-workflow" class="primary-btn">Start Workflow</button>
+                        <button id="stop-workflow" class="danger-btn" disabled>Stop Workflow</button>
+                        <button id="telegram-connect" class="secondary-btn">Connect Telegram</button>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="charts-container">
+                <div class="chart-box">
+                    <h2>Price Chart</h2>
+                    <div class="live-data-controls">
+                        <select id="exchange-select" class="exchange-select">
+                            <option value="binance">Binance</option>
+                            <option value="coinbase">Coinbase</option>
+                            <option value="kraken">Kraken</option>
+                        </select>
+                        <select id="timeframe-select" class="exchange-select">
+                            <option value="1m">1 minute</option>
+                            <option value="5m">5 minutes</option>
+                            <option value="15m">15 minutes</option>
+                            <option value="1h">1 hour</option>
+                        </select>
+                        <div class="data-refresh">
+                            Last updated: <span id="last-update-time">-</span>
+                            <button id="refresh-data" class="small-btn" style="margin-left: 10px;">Refresh</button>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="price-chart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-box">
+                    <h2>Trading Activity</h2>
+                    <div class="chart-wrapper">
+                        <canvas id="activity-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="active-trading">
+                <h2>Active Trading</h2>
+                <div class="coin-selection">
+                    <h3>Current Target Coins</h3>
+                    <div id="target-coins" class="coins-grid"></div>
+                </div>
+                <div class="strategy-section">
+                    <h3>Applied Strategies</h3>
+                    <div id="active-strategies" class="strategy-list"></div>
+                </div>
+            </section>
+            
+            <section class="logs-section">
+                <h2>Workflow Logs</h2>
+                <div class="log-controls">
+                    <button id="clear-logs" class="small-btn">Clear Logs</button>
+                    <select id="log-filter">
+                        <option value="all">All Logs</option>
+                        <option value="trades">Trades Only</option>
+                        <option value="analysis">Analysis Only</option>
+                        <option value="errors">Errors Only</option>
+                    </select>
+                </div>
+                <div class="logs-container" id="log-container">
+                    <div class="log-entry system-log">
+                        <span class="log-time">00:00:00</span>
+                        <span class="log-text">System initialized. Waiting to start workflow...</span>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="live-market-data">
+                <h2>Live Market Data</h2>
+                <div class="market-table-container">
+                    <table class="market-table">
+                        <thead>
+                            <tr>
+                                <th>Coin</th>
+                                <th>Price</th>
+                                <th>24h Change</th>
+                                <th>24h Volume</th>
+                                <th>Market Cap</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="market-data-body">
+                            <!-- Market data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <section class="api-config-section">
+                <h2>Trading Configuration</h2>
+                <div class="config-panels">
+                    <div class="config-panel">
+                        <h3>Coinbase API Setup</h3>
+                        <div class="form-group">
+                            <label for="coinbase-api-key">API Key</label>
+                            <input type="password" id="coinbase-api-key" placeholder="Enter Coinbase API Key">
+                        </div>
+                        <div class="form-group">
+                            <label for="coinbase-api-secret">API Secret</label>
+                            <input type="password" id="coinbase-api-secret" placeholder="Enter Coinbase API Secret">
+                        </div>
+                        <div class="form-group">
+                            <label for="coinbase-passphrase">API Passphrase</label>
+                            <input type="password" id="coinbase-passphrase" placeholder="Enter Coinbase Passphrase">
+                        </div>
+                        <button id="save-api-config" class="primary-btn">Save API Configuration</button>
+                        <div id="api-status" class="config-status">Not Configured</div>
+                    </div>
+                    
+                    <div class="config-panel">
+                        <h3>Funding Configuration</h3>
+                        <div class="form-group">
+                            <label for="available-funds">Available Funds (USD)</label>
+                            <input type="number" id="available-funds" placeholder="Enter amount in USD">
+                        </div>
+                        <div class="form-group">
+                            <label for="max-per-trade">Maximum Per Trade (USD)</label>
+                            <input type="number" id="max-per-trade" placeholder="Enter maximum per trade">
+                        </div>
+                        <div class="form-group">
+                            <label for="risk-level">Risk Level</label>
+                            <select id="risk-level">
+                                <option value="low">Low Risk</option>
+                                <option value="medium" selected>Medium Risk</option>
+                                <option value="high">High Risk</option>
+                            </select>
+                        </div>
+                        <button id="save-funding-config" class="primary-btn">Save Funding Configuration</button>
+                        <div id="funding-status" class="config-status">Not Configured</div>
+                    </div>
+                    
+                    <div class="config-panel payment-panel">
+                        <h3>Deposit Funds</h3>
+                        <div class="payment-methods">
+                            <div class="payment-method">
+                                <input type="radio" id="crypto-payment" name="payment-method" value="crypto">
+                                <label for="crypto-payment">
+                                    <svg class="payment-icon" viewBox="0 0 24 24" width="24" height="24">
+                                        <path d="M12 22C6.477 22 2 17.523 2 12S6.477 2 12 2s10 4.477 10 10-4.477 10-10 10zm-1-6v2h2v-2h1a2.5 2.5 0 0 0 0-5h-4a.5.5 0 0 1 0-1h4.5V8h-2V6h-2v2h-1a2.5 2.5 0 0 0 0 5h4a.5.5 0 0 1 0 1H9v2h2z" fill="currentColor"/>
+                                    </svg>
+                                    Cryptocurrency
+                                </label>
+                            </div>
+                            <div class="payment-method">
+                                <input type="radio" id="bank-payment" name="payment-method" value="bank" checked>
+                                <label for="bank-payment">
+                                    <svg class="payment-icon" viewBox="0 0 24 24" width="24" height="24">
+                                        <path d="M4 10v7h3v-7H4zm6 0v7h3v-7h-3zM2 22h19v-3H2v3zm14-12v7h3v-7h-3zm-4.5-9L2 6v2h19V6l-9.5-5z" fill="currentColor"/>
+                                    </svg>
+                                    Bank Transfer
+                                </label>
+                            </div>
+                            <div class="payment-method">
+                                <input type="radio" id="card-payment" name="payment-method" value="card">
+                                <label for="card-payment">
+                                    <svg class="payment-icon" viewBox="0 0 24 24" width="24" height="24">
+                                        <path d="M20 4H4c-1.11 0-1.99.89-1.99 2L2 18c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z" fill="currentColor"/>
+                                    </svg>
+                                    Credit/Debit Card
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div id="bank-transfer-form" class="payment-form active">
+                            <div class="form-group">
+                                <label for="bank-name">Bank Name</label>
+                                <input type="text" id="bank-name" placeholder="Enter your bank name">
+                            </div>
+                            <div class="form-group">
+                                <label for="account-number">Account Number</label>
+                                <input type="text" id="account-number" placeholder="Enter account number">
+                            </div>
+                            <div class="form-group">
+                                <label for="routing-number">Routing Number</label>
+                                <input type="text" id="routing-number" placeholder="Enter routing number">
+                            </div>
+                        </div>
+                        
+                        <div id="card-payment-form" class="payment-form">
+                            <div class="form-group">
+                                <label for="card-number">Card Number</label>
+                                <input type="text" id="card-number" placeholder="Enter card number">
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="expiry-date">Expiry Date</label>
+                                    <input type="text" id="expiry-date" placeholder="MM/YY">
+                                </div>
+                                <div class="form-group">
+                                    <label for="cvv">CVV</label>
+                                    <input type="text" id="cvv" placeholder="CVV">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="crypto-payment-form" class="payment-form">
+                            <div class="crypto-address">
+                                <p>Send cryptocurrency to this address:</p>
+                                <div class="address-display">
+                                    <code id="deposit-address">bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh</code>
+                                    <button id="copy-address" class="small-btn">Copy</button>
+                                </div>
+                                <div class="qr-code" id="crypto-qr">
+                                    <!-- QR code will be generated here -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="deposit-amount">
+                            <div class="form-group">
+                                <label for="deposit-amount">Deposit Amount (USD)</label>
+                                <input type="number" id="deposit-amount" placeholder="Enter amount to deposit">
+                            </div>
+                        </div>
+                        
+                        <button id="process-deposit" class="primary-btn">Process Deposit</button>
+                        <div id="deposit-status" class="config-status">Ready for deposit</div>
+                    </div>
+                </div>
+            </section>
+            
+            <section class="vscode-integration">
+                <h2>Trading Bots - VSCode Integration</h2>
+                <div class="bot-file-list" id="bot-files">
+                    <!-- Bot files will be listed here -->
+                </div>
+                <div class="editor-toolbar">
+                    <div>
+                        <button id="save-bot-file" class="small-btn">Save</button>
+                        <button id="run-bot-file" class="small-btn primary-btn">Run Bot</button>
+                    </div>
+                    <div>
+                        <button id="new-bot-file" class="small-btn">New Bot</button>
+                    </div>
+                </div>
+                <div class="code-editor" id="code-editor">
+                    <!-- Code editor will be mounted here -->
+                </div>
+            </section>
+        </main>
+        
+        <div id="telegram-modal" class="modal">
+            <div class="modal-content">
+                <span class="close-btn">&times;</span>
+                <h2>Connect Telegram Bot</h2>
+                <div class="telegram-setup">
+                    <div class="qr-container">
+                        <svg id="telegram-qr" width="200" height="200"></svg>
+                    </div>
+                    <div class="telegram-instructions">
+                        <h3>Instructions:</h3>
+                        <ol>
+                            <li>Scan QR code with your Telegram app</li>
+                            <li>Start a conversation with the bot</li>
+                            <li>Send the activation code to the bot</li>
+                        </ol>
+                        <div class="activation-code">
+                            <span>Your activation code:</span>
+                            <span id="activation-code">XXXX-XXXX-XXXX</span>
+                            <button id="copy-code" class="small-btn">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="app.js" type="module"></script>
+</body>
+</html>
